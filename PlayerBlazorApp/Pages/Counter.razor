@@ -1,0 +1,160 @@
+﻿@page "/counter"
+@using PlayerBlazorApp.Models
+@using PlayerBlazorApp.Services
+
+<PageTitle>Home</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-center mb-2">
+                <iframe src="@YoutubeId" width="800" height="400" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="lista-enlaces">
+                <h4>Lista de Enlaces</h4>
+                <ul>
+                    @foreach (var (index, titulo) in lista.ObtenerTitulos().Select((value, i) => (i + 1, value)))
+                    {
+                        <li>@index. @titulo</li>
+                    }
+
+                </ul>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center mb-2">
+        <button @onclick="First" class="me-2 btn btn-primary">Primero</button>
+        <button @onclick="Before" class="me-2 btn btn-warning">Eliminar Anterior</button>
+        <button @onclick="Next" class="me-2 btn btn-warning">Eliminar Siguiente</button>
+        <button @onclick="Last" class="me-2 btn btn-primary">Final</button>
+
+        <button @onclick="DeleteSelected" class="me-2 btn btn-danger">Eliminar Seleccionado</button>
+        <button @onclick="Previous" class="me-2 btn btn-primary">Anterior</button> <!-- Botón Anterior -->
+        <button @onclick="MoveNext" class="me-2 btn btn-primary">Siguiente</button> <!-- Botón Siguiente -->
+    </div>
+
+    <div class="row">
+        <input type="text" class="form-control mb-2" @bind-value="YoutubeName" placeholder="Nombre del video" />
+        <input type="text" class="form-control mb-2" @bind-value="YoutubeLink" placeholder="Enlace del video" />
+        <button class="btn btn-success" @onclick="Save">Guardar</button>
+    </div>
+
+    <p>@Mensaje</p>
+</div>
+
+@code {
+    DoubleLinkedList lista;
+
+    string YoutubeName = string.Empty;
+    string YoutubeLink = string.Empty;
+    string YoutubeId = string.Empty;
+    string Mensaje = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        lista = new DoubleLinkedList();
+    }
+
+    void PlayVideo()
+    {
+        if (lista.NodoActual is not null)
+        {
+            YoutubeLink = lista.NodoActual.Datos.RutaArchivo;
+
+            var videoId = GetVideoId(YoutubeLink);
+
+            if (!string.IsNullOrEmpty(videoId))
+            {
+                YoutubeId = $"https://www.youtube.com/embed/{videoId}";
+            }
+
+        }
+    }
+
+    string GetVideoId(string link)
+    {
+        var uri = new Uri(link);
+        var query = uri.Query;
+        var queryparams = System.Web.HttpUtility.ParseQueryString(query);
+        var videoId = queryparams["v"];
+        return videoId;
+    }
+
+    void First()
+    {
+        lista.NodoActual = lista.PrimerNodo;
+        PlayVideo();
+    }
+
+    void Before()
+    {
+        lista.EliminarVideoAlInicio();
+        PlayVideo();
+    }
+
+    void Next()
+    {
+        lista.EliminarVideoAlFinal();
+        PlayVideo();
+    }
+
+    void Last()
+    {
+        lista.NodoActual = lista.UltimoNodo;
+        PlayVideo();
+    }
+
+    void Save()
+    {
+        var nuevoNodo = new Nodo(new Video.SubVideo(YoutubeName, YoutubeLink)); // Cambio aquí
+        Mensaje = lista.AgregarVideoAlInicio(nuevoNodo.Datos);
+        PlayVideo();
+        YoutubeName = string.Empty;
+        YoutubeLink = string.Empty;
+    }
+
+    void Delete()
+    {
+        lista.EliminarPosicionSeleccionada();
+        PlayVideo();
+    }
+
+    void DeleteSelected()
+    {
+        if (lista.NodoActual != null)
+        {
+            lista.EliminarPosicionSeleccionada();
+            lista.NodoActual = null;
+            Mensaje = "Nodo seleccionado eliminado.";
+        }
+        else
+        {
+            Mensaje = "Seleccione un nodo antes de eliminar.";
+        }
+
+        PlayVideo();
+    }
+
+    void Previous()
+    {
+        if (lista.NodoActual != null && lista.NodoActual.TieneNodoAnterior())
+        {
+            lista.NodoActual = lista.NodoActual.ObtenerNodoAnterior();
+            PlayVideo();
+        }
+    }
+
+    void MoveNext()
+    {
+        if (lista.NodoActual != null && lista.NodoActual.TieneNodoSiguiente())
+        {
+            lista.NodoActual = lista.NodoActual.ObtenerNodoSiguiente();
+            PlayVideo();
+        }
+    }
+}
